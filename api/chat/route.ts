@@ -1,40 +1,59 @@
-import { OpenAIStream, StreamingTextResponse } from 'ai';
-import OpenAI from 'openai';
+import { NextRequest } from 'next/server';
+import { OpenAI } from 'openai';
+import { StreamingTextResponse } from 'ai';
 
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || '',
+  apiKey: process.env.OPENAI_API_KEY,
 });
 
 export const runtime = 'edge';
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   const body = await req.json();
-  const { messages } = body;
+  const messages = body.messages;
+  const transcript = body.transcript;
 
-  // Choose system prompt based on user message content
-  const firstUserMessage = messages.find(m => m.role === 'user')?.content?.toLowerCase() || '';
-  let systemPrompt = '';
+  const userMessage = messages[messages.length - 1].content.toLowerCase();
+  const isGenerate = userMessage.includes('generate');
+  const isSummarize = userMessage.includes('summarize');
 
-  if (firstUserMessage.includes('summarize')) {
-    systemPrompt = 'You are a product assistant that summarizes transcripts clearly and concisely.';
-  } else {
-    systemPrompt = 'You are a product assistant that converts user feedback into a list of user stories in JSON format with 1–3 tags.';
-  }
+  const finalMessages = [
+    ...(isGenerate || isSummarize
+      ? [
+          {
+            role: 'system',
+            content: isSummarize
+              ? 'You are a helpful assistant that summarizes transcripts.'
+              : 'You are a product assistant that converts feedback into tagged user stories. Output should be a JSON list of objects with "story" and "tags".',
+          },
+          {
+            role: 'user',
+            content: transcript,
+          },
+        ]
+      : []),
+    ...messages,
+  ];
 
   const response = await openai.chat.completions.create({
     model: 'gpt-4-turbo',
+    messages: finalMessages,
+    temperature: 0.4,
     stream: true,
-    messages: [
-      {
-        role: 'system',
-        content: systemPrompt,
-      },
-      ...messages,
-    ],
-    temperature: 0.3,
-    max_tokens: 1000,
   });
 
-  const stream = OpenAIStream(response);
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream({
+    async start(controller) {
+      for await (const chunk of response) {
+        const token = chunk.choices[0]?.delta?.content;
+        if (token) {
+          controller.enqueue(encoder.encode(token));
+        }
+      }
+      controller.close();
+    },
+  });
+
   return new StreamingTextResponse(stream);
 }
