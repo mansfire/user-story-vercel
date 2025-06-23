@@ -1,22 +1,36 @@
-import { OpenAIStream, StreamingTextResponse } from 'ai';
 import OpenAI from 'openai';
+import { NextResponse } from 'next/server';
 
-// Optional: use environment variable
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || '', // 👈 or hardcode your key here (not recommended)
+  apiKey: process.env.OPENAI_API_KEY
 });
 
-export const runtime = 'edge'; // use Vercel's Edge Runtime for speed
+export const runtime = 'edge';
 
 export async function POST(req: Request) {
   const { messages } = await req.json();
 
-  const response = await openai.chat.completions.create({
+  const stream = await openai.chat.completions.create({
     model: 'gpt-4',
     stream: true,
     messages,
   });
 
-  const stream = OpenAIStream(response);
-  return new StreamingTextResponse(stream);
+  const encoder = new TextEncoder();
+  const readable = new ReadableStream({
+    async start(controller) {
+      for await (const chunk of stream) {
+        const text = chunk.choices[0]?.delta?.content;
+        if (text) controller.enqueue(encoder.encode(text));
+      }
+      controller.close();
+    },
+  });
+
+  return new Response(readable, {
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Cache-Control': 'no-cache',
+    },
+  });
 }
