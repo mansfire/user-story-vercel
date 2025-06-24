@@ -36,10 +36,10 @@ export default function Home() {
     if (userMessage.includes('generate') || userMessage.includes('summarize')) {
       body.transcript = transcriptRef.current;
     }
-
-    const res = await fetch('/api/chat', {
+    
+    const res = await fetch('http://localhost:8000/chat', {
       method: 'POST',
-      body: JSON.stringify(body),
+      body: JSON.stringify({ messages }),
       headers: { 'Content-Type': 'application/json' },
     });
 
