@@ -6,8 +6,22 @@ export default function Home() {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [firefliesList, setFirefliesList] = useState<{ id: string; title: string }[]>([]);
+  const [selectedId, setSelectedId] = useState('');
   const transcriptRef = useRef<string>('');
   const storiesRef = useRef<any[]>([]);
+
+  useEffect(() => {
+    // Fetch Fireflies transcripts on mount
+    fetch('/api/fireflies')
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          const parsed = data.map((item: any) => ({ id: item.id, title: item.title }));
+          setFirefliesList(parsed);
+        }
+      });
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,8 +33,9 @@ export default function Home() {
     setLoading(true);
 
     let body: any = { messages: [{ role: 'user', content: userMessage }] };
-    if (userMessage.includes('generate')) body.transcript = transcriptRef.current;
-    if (userMessage.includes('summarize')) body.transcript = transcriptRef.current;
+    if (userMessage.includes('generate') || userMessage.includes('summarize')) {
+      body.transcript = transcriptRef.current;
+    }
 
     const res = await fetch('/api/chat', {
       method: 'POST',
@@ -75,6 +90,15 @@ export default function Home() {
     setMessages((prev) => [...prev, '📄 Transcript loaded from upload.']);
   };
 
+  const handleLoadFireflies = async () => {
+    if (!selectedId) return;
+
+    const res = await fetch(`/api/fireflies?id=${selectedId}`);
+    const text = await res.text();
+    transcriptRef.current = text;
+    setMessages((prev) => [...prev, `📎 Transcript "${selectedId}" loaded from Fireflies.`]);
+  };
+
   const handleDownloadCSV = () => {
     const rows = storiesRef.current;
     const csv = [
@@ -93,9 +117,29 @@ export default function Home() {
     <main className="p-6 max-w-2xl mx-auto">
       <h1 className="text-2xl font-bold mb-4">💬 User Story Assistant</h1>
 
-      <div className="mb-4">
+      <div className="mb-6">
         <label className="block font-medium mb-1">📄 Upload Feedback File:</label>
         <input type="file" onChange={handleUpload} className="mb-2" />
+      </div>
+
+      <div className="mb-6">
+        <label className="block font-medium mb-1">🔗 Load Transcript from Fireflies:</label>
+        <select
+          className="w-full border border-gray-300 rounded px-3 py-2"
+          value={selectedId}
+          onChange={(e) => setSelectedId(e.target.value)}
+        >
+          <option value="">Select a transcript...</option>
+          {firefliesList.map((t) => (
+            <option key={t.id} value={t.id}>{t.title}</option>
+          ))}
+        </select>
+        <button
+          onClick={handleLoadFireflies}
+          className="mt-2 bg-purple-600 text-white px-4 py-2 rounded"
+        >
+          Load Transcript
+        </button>
       </div>
 
       <form onSubmit={handleSubmit} className="flex gap-2 mb-4">
