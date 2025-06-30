@@ -12,24 +12,10 @@ export default function Home() {
   const transcriptRef = useRef<string>('');
   const storiesRef = useRef<any[]>([]);
 
-  const loadTranscripts = async () => {
-    try {
-      const res = await fetch('http://localhost:8000/fireflies');
-      const data = await res.json();
-      if (Array.isArray(data)) {
-        const parsed = data.map((item: any) => ({ id: item.id, title: item.title }));
-        setFirefliesList(parsed);
-      } else {
-        setMessages(prev => [...prev, '❌ Unexpected response from Fireflies API']);
-      }
-    } catch (err) {
-      setMessages(prev => [...prev, '❌ Failed to load Fireflies transcripts.']);
-    }
-  };
-
+  const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
 
   useEffect(() => {
-    fetch(`${backendURL}/fireflies`)
+    fetch(`${BACKEND_URL}/fireflies`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -38,30 +24,39 @@ export default function Home() {
         }
       });
 
-  fetch(`${backendURL}/jira/recent`)
-    .then((res) => res.json())
-    .then((data) => setRecentStories(data));
-}, []);
+    fetch(`${BACKEND_URL}/jira/recent`)
+      .then((res) => res.json())
+      .then((data) => setRecentStories(data));
+  }, [BACKEND_URL]);
+
+  const handleRefreshTranscripts = async () => {
+    const res = await fetch(`${BACKEND_URL}/fireflies`);
+    const data = await res.json();
+    if (Array.isArray(data)) {
+      const parsed = data.map((item: any) => ({ id: item.id, title: item.title }));
+      setFirefliesList(parsed);
+      setMessages((prev) => [...prev, '🔄 Refreshed Fireflies transcript list.']);
+    } else {
+      setMessages((prev) => [...prev, '❌ Failed to load Fireflies transcripts.']);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const userMessage = input.trim().toLowerCase();
+    const userMessage = input.trim();
     if (!userMessage) return;
 
-    setMessages(prev => [...prev, `🧑 You: ${userMessage}`]);
+    setMessages((prev) => [...prev, `🧑 You: ${userMessage}`]);
     setInput('');
     setLoading(true);
 
     const body: any = {
       messages: [{ role: 'user', content: userMessage }],
+      transcript: transcriptRef.current,
     };
 
-    if (userMessage.includes('generate') || userMessage.includes('summarize')) {
-      body.transcript = transcriptRef.current;
-    }
-
     try {
-      const res = await fetch('http://localhost:8000/chat', {
+      const res = await fetch(`${BACKEND_URL}/chat`, {
         method: 'POST',
         body: JSON.stringify(body),
         headers: { 'Content-Type': 'application/json' },
@@ -79,11 +74,12 @@ export default function Home() {
           if (done) break;
           const chunk = decoder.decode(value);
           fullContent += chunk;
-          setMessages(prev => [...prev.slice(0, -1), assistantMessage + fullContent]);
+          setMessages((prev) => [...prev.slice(0, -1), assistantMessage + fullContent]);
         }
       }
 
-      if (userMessage.includes('generate')) {
+      // If it's a story generation request, try to parse JSON
+      if (userMessage.toLowerCase().includes('generate')) {
         try {
           const start = fullContent.indexOf('[');
           const end = fullContent.lastIndexOf(']') + 1;
@@ -93,8 +89,8 @@ export default function Home() {
           console.warn('Could not parse stories:', e);
         }
       }
-    } catch {
-      setMessages(prev => [...prev, '❌ Error: Could not reach backend']);
+    } catch (err) {
+      setMessages((prev) => [...prev, '❌ Error: Could not reach backend']);
     } finally {
       setLoading(false);
     }
@@ -114,13 +110,13 @@ export default function Home() {
 
     const text = await res.text();
     transcriptRef.current = text;
-    setMessages(prev => [...prev, '📄 Transcript loaded from upload.']);
+    setMessages((prev) => [...prev, '📄 Transcript loaded from upload.']);
   };
 
   const handleLoadFireflies = async () => {
     if (!selectedId) return;
 
-    const res = await fetch(`http://localhost:8000/fireflies/transcript?id=${selectedId}`);
+    const res = await fetch(`${BACKEND_URL}/fireflies/transcript?id=${selectedId}`);
     const json = await res.json();
     transcriptRef.current = json.transcript;
     setMessages((prev) => [...prev, `📎 Transcript "${selectedId}" loaded from Fireflies.`]);
@@ -141,13 +137,13 @@ export default function Home() {
   };
 
   const handlePushToJira = async () => {
-    const res = await fetch('http://localhost:8000/jira/bulk', {
+    const res = await fetch(`${BACKEND_URL}/jira/bulk`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ stories: storiesRef.current }),
     });
     const json = await res.json();
-    setMessages(prev => [...prev, `✅ Pushed to Jira: ${json.created.join(', ')}`]);
+    setMessages((prev) => [...prev, `✅ Pushed to Jira: ${json.created.join(', ')}`]);
   };
 
   return (
@@ -171,20 +167,18 @@ export default function Home() {
             <option key={t.id} value={t.id}>{t.title}</option>
           ))}
         </select>
-        <div className="flex gap-2 mt-2">
-          <button
-            onClick={handleLoadFireflies}
-            className="bg-purple-600 text-white px-4 py-2 rounded"
-          >
-            Load Transcript
-          </button>
-          <button
-            onClick={loadTranscripts}
-            className="bg-gray-600 text-white px-4 py-2 rounded"
-          >
-            Refresh List
-          </button>
-        </div>
+        <button
+          onClick={handleLoadFireflies}
+          className="mt-2 bg-purple-600 text-white px-4 py-2 rounded"
+        >
+          Load Transcript
+        </button>
+        <button
+          onClick={handleRefreshTranscripts}
+          className="mt-2 ml-2 bg-gray-500 text-white px-4 py-2 rounded"
+        >
+          Refresh List
+        </button>
       </div>
 
       <form onSubmit={handleSubmit} className="flex gap-2 mb-4">
