@@ -27,13 +27,21 @@ export default function Home() {
     }
   };
 
+
   useEffect(() => {
-    loadTranscripts();
-    fetch('http://localhost:8000/jira/recent')
+    fetch(`${backendURL}/fireflies`)
       .then((res) => res.json())
-      .then((data) => setRecentStories(data))
-      .catch(() => setMessages(prev => [...prev, '❌ Failed to load recent Jira stories.']));
-  }, []);
+      .then((data) => {
+        if (Array.isArray(data)) {
+          const parsed = data.map((item: any) => ({ id: item.id, title: item.title }));
+          setFirefliesList(parsed);
+        }
+      });
+
+  fetch(`${backendURL}/jira/recent`)
+    .then((res) => res.json())
+    .then((data) => setRecentStories(data));
+}, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
