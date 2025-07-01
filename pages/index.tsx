@@ -9,6 +9,7 @@ export default function Home() {
   const [firefliesList, setFirefliesList] = useState<{ id: string; title: string }[]>([]);
   const [selectedId, setSelectedId] = useState('');
   const [recentStories, setRecentStories] = useState<any[]>([]);
+  const [darkMode, setDarkMode] = useState(false);
   const transcriptRef = useRef<string>('');
   const storiesRef = useRef<any[]>([]);
 
@@ -146,26 +147,31 @@ export default function Home() {
   };
 
   return (
-    <main className="flex flex-col h-screen bg-[#f9f9f9]">
-      <header className="bg-white border-b p-4 shadow-sm">
-        <h1 className="text-xl font-bold text-gray-800">🧠 User Story Assistant</h1>
+    <main className={`flex flex-col h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-[#f9f9f9] text-black'}`}>
+      <header className={`p-4 border-b shadow-sm ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+        <div className="flex justify-between items-center">
+          <h1 className="text-xl font-bold">🧠 User Story Assistant</h1>
+          <button onClick={() => setDarkMode(!darkMode)} className="text-sm px-2 py-1 border rounded">
+            {darkMode ? 'Light Mode' : 'Dark Mode'}
+          </button>
+        </div>
       </header>
 
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
         {messages.map((msg, i) => (
           <div
             key={i}
-            className={`max-w-xl px-4 py-3 rounded-lg shadow-sm text-sm whitespace-pre-wrap ${msg.startsWith('🧑') ? 'bg-white self-end' : 'bg-blue-100 self-start'}`}
+            className={`max-w-xl px-4 py-3 rounded-lg shadow-sm text-sm whitespace-pre-wrap ${msg.startsWith('🧑') ? (darkMode ? 'bg-gray-700 self-end' : 'bg-white self-end') : (darkMode ? 'bg-gray-800 self-start' : 'bg-blue-100 self-start')}`}
           >
             {msg}
           </div>
         ))}
       </div>
 
-      <footer className="p-4 bg-white border-t flex flex-col space-y-2">
+      <footer className={`p-4 flex flex-col space-y-2 ${darkMode ? 'bg-gray-800 border-t border-gray-700' : 'bg-white border-t'}`}>
         <form onSubmit={handleSubmit} className="flex gap-2">
           <input
-            className="flex-1 border border-gray-300 px-3 py-2 rounded-md text-sm"
+            className={`flex-1 border px-3 py-2 rounded-md text-sm ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'border-gray-300'}`}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask something or say 'generate user stories'..."
@@ -179,12 +185,12 @@ export default function Home() {
           </button>
         </form>
 
-        <div className="flex flex-wrap gap-2 text-xs text-gray-500">
+        <div className="flex flex-wrap gap-2 text-xs">
           <input type="file" onChange={handleUpload} className="text-sm" />
           <select
             value={selectedId}
             onChange={(e) => setSelectedId(e.target.value)}
-            className="border px-2 py-1 rounded"
+            className={`border px-2 py-1 rounded ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
           >
             <option value="">Select transcript...</option>
             {firefliesList.map((t) => (
