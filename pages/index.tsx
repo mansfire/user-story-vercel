@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 
-export default function Home() {
+export default function Maria() {
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
@@ -44,7 +44,7 @@ export default function Home() {
 
     const text = await res.text();
     transcriptRef.current = text;
-    setMessages((prev) => [...prev, '📄 Transcript loaded from upload.']);
+    setMessages((prev) => [...prev, 'Transcript loaded from upload.']);
   };
 
   const handleRefreshTranscripts = async () => {
@@ -53,9 +53,9 @@ export default function Home() {
     if (Array.isArray(data)) {
       const parsed = data.map((item: any) => ({ id: item.id, title: item.title }));
       setFirefliesList(parsed);
-      setMessages((prev) => [...prev, '🔄 Refreshed Fireflies transcript list.']);
+      setMessages((prev) => [...prev, 'Refreshed Fireflies transcript list.']);
     } else {
-      setMessages((prev) => [...prev, '❌ Failed to load Fireflies transcripts.']);
+      setMessages((prev) => [...prev, 'Failed to load Fireflies transcripts.']);
     }
   };
 
@@ -64,7 +64,7 @@ export default function Home() {
     const userMessage = input.trim();
     if (!userMessage) return;
 
-    setMessages((prev) => [...prev, `🧑 You: ${userMessage}`]);
+    setMessages((prev) => [...prev, `You: ${userMessage}`]);
     setInput('');
     setLoading(true);
 
@@ -82,32 +82,32 @@ export default function Home() {
 
       const reader = res.body?.getReader();
       const decoder = new TextDecoder();
-      let assistantMessage = '🤖 Assistant: ';
+      let assistantMessage = 'Maria: ';
+      let accumulated = '';
       setMessages((prev) => [...prev, assistantMessage]);
 
-      let fullContent = '';
       if (reader) {
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
           const chunk = decoder.decode(value);
-          fullContent += chunk;
-          setMessages((prev) => [...prev.slice(0, -1), assistantMessage + fullContent]);
+          accumulated += chunk;
+          setMessages((prev) => [...prev.slice(0, -1), assistantMessage + accumulated]);
         }
       }
 
       if (userMessage.toLowerCase().includes('generate')) {
         try {
-          const start = fullContent.indexOf('[');
-          const end = fullContent.lastIndexOf(']') + 1;
-          const parsed = JSON.parse(fullContent.slice(start, end));
+          const start = accumulated.indexOf('[');
+          const end = accumulated.lastIndexOf(']') + 1;
+          const parsed = JSON.parse(accumulated.slice(start, end));
           storiesRef.current = parsed;
         } catch (e) {
           console.warn('Could not parse stories:', e);
         }
       }
     } catch (err) {
-      setMessages((prev) => [...prev, '❌ Error: Could not reach backend']);
+      setMessages((prev) => [...prev, 'Error: Could not reach backend']);
     } finally {
       setLoading(false);
     }
@@ -119,7 +119,7 @@ export default function Home() {
     const res = await fetch(`${BACKEND_URL}/fireflies/transcript?id=${selectedId}`);
     const json = await res.json();
     transcriptRef.current = json.transcript;
-    setMessages((prev) => [...prev, `📎 Transcript "${selectedId}" loaded from Fireflies.`]);
+    setMessages((prev) => [...prev, `Transcript "${selectedId}" loaded from Fireflies.`]);
   };
 
   const handleDownloadCSV = () => {
@@ -143,27 +143,30 @@ export default function Home() {
       body: JSON.stringify({ stories: storiesRef.current }),
     });
     const json = await res.json();
-    setMessages((prev) => [...prev, `✅ Pushed to Jira: ${json.created.join(', ')}`]);
+    setMessages((prev) => [...prev, `Pushed to Jira: ${json.created.join(', ')}`]);
   };
 
   return (
-    <main className={`flex flex-col min-h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-[#f9f9f9] text-black'}`}>
-      <header className={`p-4 border-b shadow-sm ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+    <main className={`flex flex-col min-h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-gray-100 text-black'}`}>
+      <header className={`p-4 shadow ${darkMode ? 'bg-gray-800' : 'bg-white'}`}>
         <div className="flex justify-between items-center">
-          <h1 className="text-xl font-bold">🧠 User Story Assistant</h1>
-          <button onClick={() => setDarkMode(!darkMode)} className="text-sm px-2 py-1 border rounded">
-            {darkMode ? 'Light Mode' : 'Dark Mode'}
+          <h1 className="text-xl font-bold">Maria</h1>
+          <button
+            onClick={() => setDarkMode((prev) => !prev)}
+            className="text-sm px-2 py-1 border rounded border-current"
+          >
+            {darkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
           </button>
         </div>
       </header>
 
       <div className="p-4 space-y-4">
         <input type="file" onChange={handleUpload} className="text-sm" />
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <select
             value={selectedId}
             onChange={(e) => setSelectedId(e.target.value)}
-            className={`border px-2 py-1 rounded ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+            className={`border px-2 py-1 rounded ${darkMode ? 'bg-gray-700 text-white border-gray-600' : 'border-gray-300'}`}
           >
             <option value="">Select transcript...</option>
             {firefliesList.map((t) => (
@@ -172,33 +175,38 @@ export default function Home() {
           </select>
           <button onClick={handleLoadFireflies} className="bg-purple-600 text-white px-2 py-1 rounded">Load</button>
           <button onClick={handleRefreshTranscripts} className="bg-gray-500 text-white px-2 py-1 rounded">Refresh</button>
-          <button onClick={handleDownloadCSV} className="bg-green-600 text-white px-2 py-1 rounded">CSV</button>
-          <button onClick={handlePushToJira} className="bg-yellow-500 text-white px-2 py-1 rounded">Jira</button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6 space-y-4">
+      <div className="flex-1 overflow-y-auto p-4 space-y-2">
         {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={`max-w-xl px-4 py-3 rounded-lg shadow-sm text-sm whitespace-pre-wrap ${msg.startsWith('🧑') ? (darkMode ? 'bg-gray-700 self-end' : 'bg-white self-end') : (darkMode ? 'bg-gray-800 self-start' : 'bg-blue-100 self-start')}`}
-          >
+          <div key={i} className={`whitespace-pre-wrap p-3 rounded text-sm max-w-2xl ${msg.startsWith('You:') ? (darkMode ? 'bg-gray-700 self-end' : 'bg-white') : (darkMode ? 'bg-gray-800' : 'bg-blue-100')}`}>
             {msg}
           </div>
         ))}
       </div>
 
-      <footer className={`p-4 flex flex-col space-y-2 ${darkMode ? 'bg-gray-800 border-t border-gray-700' : 'bg-white border-t'}`}>
+      {storiesRef.current.length > 0 && (
+        <div className="px-4 pb-4 mt-2">
+          <h2 className="text-lg font-semibold mb-2">📤 Export Stories</h2>
+          <div className="flex gap-2">
+            <button onClick={handleDownloadCSV} className="bg-green-600 text-white px-4 py-2 rounded">Download CSV</button>
+            <button onClick={handlePushToJira} className="bg-yellow-500 text-white px-4 py-2 rounded">Push to Jira</button>
+          </div>
+        </div>
+      )}
+
+      <footer className={`p-4 border-t ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-300'}`}>
         <form onSubmit={handleSubmit} className="flex gap-2">
           <input
-            className={`flex-1 border px-3 py-2 rounded-md text-sm ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : 'border-gray-300'}`}
+            className={`flex-1 border px-3 py-2 rounded ${darkMode ? 'bg-gray-700 text-white border-gray-600' : 'border-gray-300'}`}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask something or say 'generate user stories'..."
           />
           <button
             type="submit"
-            className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700"
+            className="bg-blue-600 text-white px-4 py-2 rounded"
             disabled={loading}
           >
             {loading ? '...' : 'Send'}
