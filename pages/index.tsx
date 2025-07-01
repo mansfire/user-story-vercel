@@ -146,98 +146,57 @@ export default function Home() {
   };
 
   return (
-    <main className="p-6 max-w-3xl mx-auto font-sans text-gray-800">
-      <h1 className="text-3xl font-extrabold mb-6 text-center text-blue-700">🧠 User Story Assistant</h1>
+    <main className="flex flex-col h-screen bg-[#f9f9f9]">
+      <header className="bg-white border-b p-4 shadow-sm">
+        <h1 className="text-xl font-bold text-gray-800">🧠 User Story Assistant</h1>
+      </header>
 
-      <section className="mb-8 p-4 bg-white shadow rounded">
-        <label className="block font-semibold mb-2">📁 Upload Feedback File:</label>
-        <input type="file" onChange={handleUpload} className="mb-2 w-full" />
-      </section>
+      <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        {messages.map((msg, i) => (
+          <div
+            key={i}
+            className={`max-w-xl px-4 py-3 rounded-lg shadow-sm text-sm whitespace-pre-wrap ${msg.startsWith('🧑') ? 'bg-white self-end' : 'bg-blue-100 self-start'}`}
+          >
+            {msg}
+          </div>
+        ))}
+      </div>
 
-      <section className="mb-8 p-4 bg-white shadow rounded">
-        <label className="block font-semibold mb-2">🗂 Load Transcript from Fireflies:</label>
-        <div className="flex gap-2">
+      <footer className="p-4 bg-white border-t flex flex-col space-y-2">
+        <form onSubmit={handleSubmit} className="flex gap-2">
+          <input
+            className="flex-1 border border-gray-300 px-3 py-2 rounded-md text-sm"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Ask something or say 'generate user stories'..."
+          />
+          <button
+            type="submit"
+            className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm hover:bg-blue-700"
+            disabled={loading}
+          >
+            {loading ? '...' : 'Send'}
+          </button>
+        </form>
+
+        <div className="flex flex-wrap gap-2 text-xs text-gray-500">
+          <input type="file" onChange={handleUpload} className="text-sm" />
           <select
-            className="w-full border border-gray-300 rounded px-3 py-2"
             value={selectedId}
             onChange={(e) => setSelectedId(e.target.value)}
+            className="border px-2 py-1 rounded"
           >
-            <option value="">Select a transcript...</option>
+            <option value="">Select transcript...</option>
             {firefliesList.map((t) => (
               <option key={t.id} value={t.id}>{t.title}</option>
             ))}
           </select>
-          <button
-            onClick={handleLoadFireflies}
-            className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
-          >
-            Load
-          </button>
-          <button
-            onClick={handleRefreshTranscripts}
-            className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
-          >
-            Refresh
-          </button>
+          <button onClick={handleLoadFireflies} className="bg-purple-600 text-white px-2 py-1 rounded">Load</button>
+          <button onClick={handleRefreshTranscripts} className="bg-gray-500 text-white px-2 py-1 rounded">Refresh</button>
+          <button onClick={handleDownloadCSV} className="bg-green-600 text-white px-2 py-1 rounded">CSV</button>
+          <button onClick={handlePushToJira} className="bg-yellow-500 text-white px-2 py-1 rounded">Jira</button>
         </div>
-      </section>
-
-      <form onSubmit={handleSubmit} className="flex gap-2 mb-6">
-        <input
-          className="flex-1 border border-gray-300 px-3 py-2 rounded"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder="Try: 'Summarize the transcript' or 'Generate user stories'"
-        />
-        <button
-          type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-          disabled={loading}
-        >
-          {loading ? '...' : 'Send'}
-        </button>
-      </form>
-
-      <div className="space-y-2 mb-6">
-        {messages.map((msg, i) => (
-          <div key={i} className="bg-gray-100 p-3 rounded border whitespace-pre-wrap">{msg}</div>
-        ))}
-      </div>
-
-      {storiesRef.current.length > 0 && (
-        <section className="mt-8 p-4 bg-white shadow rounded">
-          <h2 className="text-xl font-semibold mb-4 text-green-700">📤 Export Stories</h2>
-          <div className="flex gap-4">
-            <button
-              onClick={handleDownloadCSV}
-              className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
-            >
-              Download CSV
-            </button>
-            <button
-              onClick={handlePushToJira}
-              className="bg-yellow-500 text-white px-4 py-2 rounded hover:bg-yellow-600"
-            >
-              Push to Jira
-            </button>
-          </div>
-        </section>
-      )}
-
-      {recentStories.length > 0 && (
-        <section className="mt-10 p-4 bg-white shadow rounded">
-          <h2 className="text-xl font-semibold mb-4 text-gray-800">🕓 Recent Jira Stories</h2>
-          <ul className="space-y-2">
-            {recentStories.map((s) => (
-              <li key={s.key} className="bg-gray-50 p-3 rounded border">
-                <strong>{s.key}</strong>: {s.summary}
-                <br />
-                <small>{s.created}</small>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      </footer>
     </main>
   );
 }
