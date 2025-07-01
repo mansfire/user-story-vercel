@@ -147,7 +147,7 @@ export default function Home() {
   };
 
   return (
-    <main className={`flex flex-col h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-[#f9f9f9] text-black'}`}>
+    <main className={`flex flex-col min-h-screen ${darkMode ? 'bg-gray-900 text-white' : 'bg-[#f9f9f9] text-black'}`}>
       <header className={`p-4 border-b shadow-sm ${darkMode ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
         <div className="flex justify-between items-center">
           <h1 className="text-xl font-bold">🧠 User Story Assistant</h1>
@@ -156,6 +156,26 @@ export default function Home() {
           </button>
         </div>
       </header>
+
+      <div className="p-4 space-y-4">
+        <input type="file" onChange={handleUpload} className="text-sm" />
+        <div className="flex gap-2">
+          <select
+            value={selectedId}
+            onChange={(e) => setSelectedId(e.target.value)}
+            className={`border px-2 py-1 rounded ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
+          >
+            <option value="">Select transcript...</option>
+            {firefliesList.map((t) => (
+              <option key={t.id} value={t.id}>{t.title}</option>
+            ))}
+          </select>
+          <button onClick={handleLoadFireflies} className="bg-purple-600 text-white px-2 py-1 rounded">Load</button>
+          <button onClick={handleRefreshTranscripts} className="bg-gray-500 text-white px-2 py-1 rounded">Refresh</button>
+          <button onClick={handleDownloadCSV} className="bg-green-600 text-white px-2 py-1 rounded">CSV</button>
+          <button onClick={handlePushToJira} className="bg-yellow-500 text-white px-2 py-1 rounded">Jira</button>
+        </div>
+      </div>
 
       <div className="flex-1 overflow-y-auto p-6 space-y-4">
         {messages.map((msg, i) => (
@@ -184,24 +204,6 @@ export default function Home() {
             {loading ? '...' : 'Send'}
           </button>
         </form>
-
-        <div className="flex flex-wrap gap-2 text-xs">
-          <input type="file" onChange={handleUpload} className="text-sm" />
-          <select
-            value={selectedId}
-            onChange={(e) => setSelectedId(e.target.value)}
-            className={`border px-2 py-1 rounded ${darkMode ? 'bg-gray-700 border-gray-600 text-white' : ''}`}
-          >
-            <option value="">Select transcript...</option>
-            {firefliesList.map((t) => (
-              <option key={t.id} value={t.id}>{t.title}</option>
-            ))}
-          </select>
-          <button onClick={handleLoadFireflies} className="bg-purple-600 text-white px-2 py-1 rounded">Load</button>
-          <button onClick={handleRefreshTranscripts} className="bg-gray-500 text-white px-2 py-1 rounded">Refresh</button>
-          <button onClick={handleDownloadCSV} className="bg-green-600 text-white px-2 py-1 rounded">CSV</button>
-          <button onClick={handlePushToJira} className="bg-yellow-500 text-white px-2 py-1 rounded">Jira</button>
-        </div>
       </footer>
     </main>
   );
