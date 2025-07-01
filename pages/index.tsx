@@ -44,7 +44,7 @@ export default function Maria() {
 
     const text = await res.text();
     transcriptRef.current = text;
-    setMessages((prev) => [...prev, 'Transcript loaded from upload.']);
+    setMessages((prev) => [...prev, '📄 Transcript loaded from upload.']);
   };
 
   const handleRefreshTranscripts = async () => {
@@ -53,9 +53,9 @@ export default function Maria() {
     if (Array.isArray(data)) {
       const parsed = data.map((item: any) => ({ id: item.id, title: item.title }));
       setFirefliesList(parsed);
-      setMessages((prev) => [...prev, 'Refreshed Fireflies transcript list.']);
+      setMessages((prev) => [...prev, '🔄 Refreshed Fireflies transcript list.']);
     } else {
-      setMessages((prev) => [...prev, 'Failed to load Fireflies transcripts.']);
+      setMessages((prev) => [...prev, '❌ Failed to load Fireflies transcripts.']);
     }
   };
 
@@ -64,7 +64,7 @@ export default function Maria() {
     const userMessage = input.trim();
     if (!userMessage) return;
 
-    setMessages((prev) => [...prev, `You: ${userMessage}`]);
+    setMessages((prev) => [...prev, `🧑 You: ${userMessage}`]);
     setInput('');
     setLoading(true);
 
@@ -82,7 +82,7 @@ export default function Maria() {
 
       const reader = res.body?.getReader();
       const decoder = new TextDecoder();
-      let assistantMessage = 'Maria: ';
+      let assistantMessage = '🤖 Maria: ';
       let accumulated = '';
       setMessages((prev) => [...prev, assistantMessage]);
 
@@ -107,7 +107,7 @@ export default function Maria() {
         }
       }
     } catch (err) {
-      setMessages((prev) => [...prev, 'Error: Could not reach backend']);
+      setMessages((prev) => [...prev, '❌ Error: Could not reach backend']);
     } finally {
       setLoading(false);
     }
@@ -119,7 +119,7 @@ export default function Maria() {
     const res = await fetch(`${BACKEND_URL}/fireflies/transcript?id=${selectedId}`);
     const json = await res.json();
     transcriptRef.current = json.transcript;
-    setMessages((prev) => [...prev, `Transcript "${selectedId}" loaded from Fireflies.`]);
+    setMessages((prev) => [...prev, `📎 Transcript "${selectedId}" loaded from Fireflies.`]);
   };
 
   const handleDownloadCSV = () => {
@@ -143,7 +143,7 @@ export default function Maria() {
       body: JSON.stringify({ stories: storiesRef.current }),
     });
     const json = await res.json();
-    setMessages((prev) => [...prev, `Pushed to Jira: ${json.created.join(', ')}`]);
+    setMessages((prev) => [...prev, `✅ Pushed to Jira: ${json.created.join(', ')}`]);
   };
 
   return (
@@ -160,7 +160,7 @@ export default function Maria() {
         </div>
       </header>
 
-      <div className="p-4 space-y-4">
+      <div className="border-b border-gray-300 dark:border-gray-700 p-4 space-y-4">
         <input type="file" onChange={handleUpload} className="text-sm" />
         <div className="flex gap-2 flex-wrap">
           <select
@@ -178,16 +178,16 @@ export default function Maria() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-2">
+      <div className="flex-1 overflow-y-auto p-4 space-y-2 border-b border-gray-300 dark:border-gray-700">
         {messages.map((msg, i) => (
-          <div key={i} className={`whitespace-pre-wrap p-3 rounded text-sm max-w-2xl ${msg.startsWith('You:') ? (darkMode ? 'bg-gray-700 self-end' : 'bg-white') : (darkMode ? 'bg-gray-800' : 'bg-blue-100')}`}>
+          <div key={i} className={`whitespace-pre-wrap p-3 rounded text-sm max-w-2xl mx-auto ${msg.includes('🧑') ? (darkMode ? 'bg-gray-700 self-end' : 'bg-white') : (darkMode ? 'bg-gray-800' : 'bg-blue-100')}`}>
             {msg}
           </div>
         ))}
       </div>
 
       {storiesRef.current.length > 0 && (
-        <div className="px-4 pb-4 mt-2">
+        <div className="px-4 py-4 border-b border-gray-300 dark:border-gray-700">
           <h2 className="text-lg font-semibold mb-2">📤 Export Stories</h2>
           <div className="flex gap-2">
             <button onClick={handleDownloadCSV} className="bg-green-600 text-white px-4 py-2 rounded">Download CSV</button>
